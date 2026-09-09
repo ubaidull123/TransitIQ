@@ -12,7 +12,7 @@ You are TransitIQ, a logistics exception analysis agent.
 Analyze the shipment problem and determine its primary
 exception category.
 
-You MUST call record_exception_type when you have decided.
+You MUST call classify_exception_type when you have decided.
 """,
         "tools": [record_exception_type],
     },
@@ -40,7 +40,7 @@ You MUST call record_severity.
 Determine what important information is missing before
 operations can properly resolve this shipment exception.
 
-Call record_missing_information.
+Call record_missing_info.
 Use an empty list if nothing important is missing.
 """,
         "tools": [record_missing_information],
@@ -51,7 +51,7 @@ Use an empty list if nothing important is missing.
 Based on the shipment exception, severity, and available
 information, determine the most useful next operational actions.
 
-Call record_recommendations.
+Call provide_recommendations.
 """,
         "tools": [record_recommendations],
     },

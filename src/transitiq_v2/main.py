@@ -37,8 +37,8 @@ def main():
         for update in agent.stream(initial_state, stream_mode="updates"):
             tool_update = update.get("tools", {})
 
-            if "Issue_type" in tool_update:
-                print(f"\n Classification: {tool_update['Issue_type']}")
+            if "exception_type" in tool_update:
+                print(f"\n Classification: {tool_update['exception_type']}")
 
             if "severity" in tool_update:
                 print(f"\n Severity: {tool_update['severity']}")

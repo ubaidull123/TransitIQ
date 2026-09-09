@@ -1,4 +1,4 @@
-from transitiq_v2.api.router import get_issue, get_issue_by_id 
+from transitiq_v2.api.exception_routes import get_issue, get_issue_by_id
 import asyncio
 
 async def get_graph_input(shipment_id: int):

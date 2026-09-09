@@ -16,8 +16,9 @@ class TransitState(AgentState):
     issue_id: NotRequired[int]
     origin: NotRequired[str]
     destination: NotRequired[str]
+    carrier: NotRequired[str]
     description: NotRequired[str]
-    Issue_type: NotRequired[Literal[
+    exception_type: NotRequired[Literal[
         "Delayed shipment",
         "Missing documents",
         "Customs hold",
@@ -27,6 +28,7 @@ class TransitState(AgentState):
         "Payment/document mismatch",
         "Insufficient information",
     ]]
-    severity: Literal["Low", "Medium", "High", "Critical"]
-    missing_info: str
-    actions: List[str]
+    severity: NotRequired[Literal["Low", "Medium", "High", "Critical"]]
+    missing_info: NotRequired[str]
+    actions: NotRequired[List[str]]
+    recommendations: NotRequired[List[str]]

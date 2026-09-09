@@ -29,7 +29,7 @@ def classify_exception_type(exception_type: Literal[
     """
     return Command(
         update={
-            exception_type: exception_type,
+            "exception_type": exception_type,
             "current_step": "severity",
             "messages":[
                 ToolMessage(
@@ -40,4 +40,3 @@ def classify_exception_type(exception_type: Literal[
 
         }
     )
-  
