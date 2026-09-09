@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OPENROUTER_MODEL = "deepseek/deepseek-v4-flash-0731"
+OPENROUTER_MODEL = "inclusionai/ling-3.0-flash-fin:free"
 
 
 def get_openrouter_client() -> ChatOpenRouter:
