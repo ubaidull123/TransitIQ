@@ -18,6 +18,8 @@ Full roadmap: see `PROJECT_ROADMAP.md`. **That file describes 5 future versions.
 
 Only build what V1 needs:
 - `POST /exceptions` endpoint, Pydantic-validated
+- `GET /exceptions` read endpoint (newest first, limited)
+- A React intake console in `frontend/` — record an exception, and see the ledger
 - Save issues to a Postgres `issues` table
 - A single agent built with `create_agent`, with a few plain tools (`analyze_case`, `add_context`, `update_action`) — no hand-written `StateGraph`
 - A CLI to test the agent loop locally
@@ -55,6 +57,7 @@ If a task seems to call for one of these, **stop and ask** rather than building 
 - FastAPI + Uvicorn
 - SQLAlchemy (async, `psycopg 3` driver) — use the existing models/session setup, don't introduce a second data-access pattern alongside it
 - `langchain` (`create_agent`) — runs on the LangGraph engine, `AsyncPostgresSaver` for checkpointing (`thread_id = shipment:{id}`), but write zero hand-rolled graph code at this phase
+- React 19 + Vite + TypeScript in `frontend/`, managed with `npm` — served by FastAPI's StaticFiles in production, proxied to it in dev. No UI or component libraries; plain CSS.
 - Standard `logging` — not LangSmith yet
 
 ## When In Doubt

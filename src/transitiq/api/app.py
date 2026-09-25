@@ -1,13 +1,17 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 from transitiq.api.routers.exception_routes import exception_handlers, router
-from transitiq.database import models  
+from transitiq.database.models import exception_model
 from transitiq.database.db import Base, engine, get_database_uri
 from transitiq.workflow.agent import create_transit_agent
+
+UI_DIST = Path(__file__).resolve().parents[3] / "frontend" / "dist"
 
 
 @asynccontextmanager
@@ -30,6 +34,8 @@ def create_app() -> FastAPI:
         exception_handlers=exception_handlers,
     ) 
     application.include_router(router)
+    if UI_DIST.is_dir():
+        application.mount("/", StaticFiles(directory=UI_DIST, html=True), name="ui")
     return application
 
 

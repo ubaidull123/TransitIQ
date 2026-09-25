@@ -50,6 +50,8 @@ graph TD
 *   **Business Value:** Proves the system can reliably ingest, store, and track an exception without data loss.
 *   **Key Features:**
     *   `POST /exceptions` endpoint with strict Pydantic validation.
+    *   `GET /exceptions` read endpoint — newest reported first, capped at 50.
+    *   React intake console in `frontend/` — a form to record an exception and a read-only ledger of what's on file. Served by FastAPI's StaticFiles in production, proxied to it in dev.
     *   Immutable `issues` table in PostgreSQL.
     *   Single agent via LangChain's `create_agent` (runs on the LangGraph engine — `AsyncPostgresSaver` checkpointing, thread_id = `shipment:{id}`, with zero hand-written graph code).
     *   Core tools: `analyze_case`, `add_context`, `update_action`.
@@ -116,6 +118,7 @@ graph TD
 | :--- | :--- | :--- | :--- |
 | **Runtime** | Python 3.13+, `uv` | Python 3.13+, `uv` | Python 3.13+, `uv` |
 | **API Framework** | FastAPI, Uvicorn | FastAPI + Structured JSON | FastAPI + Webhooks + Prometheus |
+| **Frontend** | React 19 + Vite + TypeScript | React + Vite | React + Vite (control-tower dashboard) |
 | **Orchestration** | `create_agent` on LangGraph (Single Agent) | `create_agent` + HITL middleware (V3) → raw `StateGraph` (V4, multi-agent RAG) | `StateGraph` (Multi-Agent + Background) |
 | **Database** | PostgreSQL (psycopg 3) | PostgreSQL + `pgvector` | PostgreSQL + `pgvector` + Redis |
 | **Observability** | Standard Logging | LangSmith Tracing | LangSmith + Prometheus/Grafana |
@@ -131,6 +134,9 @@ TransitIQ/
 │   └── workflows/
 │       ├── ci.yml               # Lint, type-check, test
 │       └── build.yml            # Docker build and push
+├── frontend/                    # React intake console
+│   ├── src/
+│   └── vite.config.ts
 ├── src/transitiq/
 │   ├── api/
 │   │   ├── app.py               # FastAPI app, routers, lifespan

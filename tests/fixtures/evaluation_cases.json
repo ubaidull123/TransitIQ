@@ -1,0 +1,234 @@
+{
+  "dataset": "transitiq-v1-evaluation",
+  "version": "1.0.0",
+  "description": "Synthetic shipment exceptions for API ingestion and single-agent evaluation.",
+  "valid_cases": [
+    {
+      "input": {
+        "shipment_id": "EVAL-001",
+        "source": "email",
+        "reported_at": "2026-09-01T08:15:00Z",
+        "carrier": "Maersk",
+        "origin": "Shanghai, CN",
+        "destination": "Hamburg, DE",
+        "raw_text": "Customs has placed the shipment on hold because the commercial invoice is missing the pharmaceutical product license. The container contains temperature-sensitive insulin and has been waiting for 18 hours.",
+        "metadata": {
+          "commodity": "pharmaceuticals",
+          "temperature_controlled": true,
+          "container_id": "MSCU1234567"
+        }
+      },
+      "expected": {
+        "exception_type": "customs_hold",
+        "severity": "critical",
+        "missing_information": ["product license", "current container temperature", "customs deadline"],
+        "action_themes": ["contact customs broker", "obtain missing license", "monitor temperature"]
+      }
+    },
+    {
+      "input": {
+        "shipment_id": "EVAL-002",
+        "source": "webhook",
+        "reported_at": "2026-09-02T11:30:00Z",
+        "carrier": "DHL Express",
+        "origin": "Frankfurt, DE",
+        "destination": "Chicago, US",
+        "raw_text": "Reefer unit alarm triggered during transit. The temperature rose to 11 C for approximately 45 minutes. The shipment contains vaccines and the carrier has not confirmed whether the cooling unit is operational.",
+        "metadata": {
+          "commodity": "vaccines",
+          "temperature_controlled": true,
+          "current_temperature_c": 11
+        }
+      },
+      "expected": {
+        "exception_type": "reefer_failure",
+        "severity": "critical",
+        "missing_information": ["validated temperature excursion report", "product stability window", "cooling unit status"],
+        "action_themes": ["contact carrier immediately", "secure temperature records", "assess product viability"]
+      }
+    },
+    {
+      "input": {
+        "shipment_id": "EVAL-003",
+        "source": "edi",
+        "reported_at": "2026-09-03T14:00:00Z",
+        "carrier": "Union Pacific",
+        "origin": "Long Beach, US",
+        "destination": "Dallas, US",
+        "raw_text": "Severe storms have delayed rail departure by two days. The container is secure at the terminal and the cargo is non-perishable consumer electronics.",
+        "metadata": {
+          "commodity": "consumer electronics",
+          "delay_hours": 48,
+          "temperature_controlled": false
+        }
+      },
+      "expected": {
+        "exception_type": "weather_delay",
+        "severity": "medium",
+        "missing_information": ["revised departure time", "updated delivery estimate"],
+        "action_themes": ["request revised ETA", "notify consignee", "monitor terminal status"]
+      }
+    },
+    {
+      "input": {
+        "shipment_id": "EVAL-004",
+        "source": "manual",
+        "reported_at": "2026-09-04T09:45:00Z",
+        "carrier": "FedEx Freight",
+        "origin": "Memphis, US",
+        "destination": "Atlanta, US",
+        "raw_text": "Delivery attempt failed because the consignee address is missing the suite number. The package is being held at the local depot and is not hazardous or temperature-sensitive.",
+        "metadata": {
+          "commodity": "office equipment",
+          "delivery_attempts": 1
+        }
+      },
+      "expected": {
+        "exception_type": "address_issue",
+        "severity": "low",
+        "missing_information": ["correct suite number", "depot hold deadline"],
+        "action_themes": ["confirm address", "send correction to carrier", "schedule redelivery"]
+      }
+    },
+    {
+      "input": {
+        "shipment_id": "EVAL-005",
+        "source": "email",
+        "reported_at": "2026-09-05T16:20:00Z",
+        "carrier": "CMA CGM",
+        "origin": "Rotterdam, NL",
+        "destination": "New York, US",
+        "raw_text": "The container arrived with visible impact damage to two pallets. The consignee has not yet opened the cartons, and the carrier has asked for photographs before accepting a claim.",
+        "metadata": {
+          "commodity": "industrial pumps",
+          "damaged_pallets": 2,
+          "claim_window_hours": 48
+        }
+      },
+      "expected": {
+        "exception_type": "cargo_damage",
+        "severity": "high",
+        "missing_information": ["damage photographs", "packing list", "estimated repair or replacement value"],
+        "action_themes": ["document damage", "preserve evidence", "open carrier claim"]
+      }
+    },
+    {
+      "input": {
+        "shipment_id": "EVAL-006",
+        "source": "webhook",
+        "reported_at": "2026-09-06T07:10:00Z",
+        "carrier": "Hapag-Lloyd",
+        "origin": "Singapore, SG",
+        "destination": "Los Angeles, US",
+        "raw_text": "Port congestion has pushed the vessel connection back by 72 hours. The booking remains confirmed and no customs or cargo integrity issue has been reported.",
+        "metadata": {
+          "commodity": "apparel",
+          "delay_hours": 72,
+          "port": "Los Angeles"
+        }
+      },
+      "expected": {
+        "exception_type": "port_congestion",
+        "severity": "medium",
+        "missing_information": ["new vessel connection", "updated arrival estimate"],
+        "action_themes": ["request carrier update", "recalculate ETA", "notify customer"]
+      }
+    },
+    {
+      "input": {
+        "shipment_id": "EVAL-007",
+        "source": "email",
+        "reported_at": "2026-09-07T13:05:00Z",
+        "carrier": "Kuehne+Nagel",
+        "origin": "Basel, CH",
+        "destination": "Milan, IT",
+        "raw_text": "The shipment is delayed because the export declaration references an incorrect HS code. Customs has requested a corrected declaration before release.",
+        "metadata": {
+          "commodity": "laboratory instruments",
+          "customs_status": "pending_correction",
+          "declared_hs_code": "9027.80"
+        }
+      },
+      "expected": {
+        "exception_type": "documentation_error",
+        "severity": "high",
+        "missing_information": ["correct HS code", "commercial invoice confirmation", "customs response deadline"],
+        "action_themes": ["correct export declaration", "coordinate with customs broker", "resubmit documents"]
+      }
+    },
+    {
+      "input": {
+        "shipment_id": "EVAL-008",
+        "source": "manual",
+        "reported_at": "2026-09-08T10:40:00Z",
+        "carrier": "DB Schenker",
+        "origin": "Prague, CZ",
+        "destination": "Vienna, AT",
+        "raw_text": "The consignee requested delivery one business day later because the receiving dock is unavailable. The carrier has not yet confirmed the rescheduled appointment.",
+        "metadata": {
+          "commodity": "furniture",
+          "requested_delay_days": 1
+        }
+      },
+      "expected": {
+        "exception_type": "delivery_reschedule",
+        "severity": "low",
+        "missing_information": ["confirmed delivery appointment", "carrier acceptance"],
+        "action_themes": ["confirm new appointment", "update consignee", "monitor delivery"]
+      }
+    }
+  ],
+  "validation_cases": [
+    {
+      "name": "missing shipment ID",
+      "input": {
+        "source": "manual",
+        "reported_at": "2026-09-09T09:00:00Z",
+        "carrier": "Test Carrier",
+        "origin": "Lahore, PK",
+        "destination": "Karachi, PK",
+        "raw_text": "A shipment was delayed."
+      },
+      "expected_status": 422
+    },
+    {
+      "name": "unsupported source",
+      "input": {
+        "shipment_id": "EVAL-INVALID-002",
+        "source": "phone",
+        "reported_at": "2026-09-09T09:00:00Z",
+        "carrier": "Test Carrier",
+        "origin": "Lahore, PK",
+        "destination": "Karachi, PK",
+        "raw_text": "A shipment was delayed."
+      },
+      "expected_status": 422
+    },
+    {
+      "name": "empty description",
+      "input": {
+        "shipment_id": "EVAL-INVALID-003",
+        "source": "manual",
+        "reported_at": "2026-09-09T09:00:00Z",
+        "carrier": "Test Carrier",
+        "origin": "Lahore, PK",
+        "destination": "Karachi, PK",
+        "raw_text": ""
+      },
+      "expected_status": 422
+    },
+    {
+      "name": "duplicate shipment ID",
+      "input": {
+        "shipment_id": "EVAL-001",
+        "source": "manual",
+        "reported_at": "2026-09-09T09:00:00Z",
+        "carrier": "Test Carrier",
+        "origin": "Lahore, PK",
+        "destination": "Karachi, PK",
+        "raw_text": "A duplicate exception for this shipment."
+      },
+      "expected_status": 409
+    }
+  ]
+}

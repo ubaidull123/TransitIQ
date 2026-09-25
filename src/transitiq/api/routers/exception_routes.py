@@ -1,42 +1,41 @@
 import logging
-from typing import cast
+from typing import Any, cast
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
 
 from transitiq.api.schemas.exception_schema import (
+    AnalysisResponse,
     ErrorBody,
     ErrorDetail,
     ErrorResponse,
-    Exception,
+    Exception as ExceptionPayload,
     ExceptionResponse,
     ExceptionSource,
 )
 from transitiq.database.db import get_db
-from transitiq.database.models import ShipmentException
-from transitiq.workflow.config import shipment_thread_config
-from transitiq.workflow.state import create_initial_state
+from transitiq.database.models.exception_model import ShipmentException
+from transitiq.api.status_codes import STATUS_CODES
+from transitiq.services.exception_service import (
+    DuplicateShipmentError,
+    load_exception,
+    read_exception_analysis,
+    save_exception,
+    start_exception_analysis,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-_STATUS_CODES = {
-    status.HTTP_400_BAD_REQUEST: "bad_request",
-    status.HTTP_401_UNAUTHORIZED: "unauthorized",
-    status.HTTP_403_FORBIDDEN: "forbidden",
-    status.HTTP_404_NOT_FOUND: "not_found",
-    status.HTTP_405_METHOD_NOT_ALLOWED: "method_not_allowed",
-    status.HTTP_409_CONFLICT: "conflict",
-    status.HTTP_422_UNPROCESSABLE_CONTENT: "unprocessable_entity",
-    status.HTTP_500_INTERNAL_SERVER_ERROR: "internal_server_error",
-}
 
+async def get_agent(request: Request) -> Any:
+    return request.app.state.agent
 
 @router.get("/health")
 async def health() -> dict[str, str]:
@@ -45,36 +44,70 @@ async def health() -> dict[str, str]:
 
 @router.post("/exceptions",response_model=ExceptionResponse, status_code=status.HTTP_201_CREATED)
 async def create_exception(
-    payload: Exception,
-    request: Request,
+    payload: ExceptionPayload,
     session: AsyncSession = Depends(get_db),
+    agent: Any = Depends(get_agent),
 ) -> ExceptionResponse:
-    """Store a reported shipment exception."""
-    record = ShipmentException(
-        shipment_id=payload.shipment_id,
-        source=payload.source,
-        reported_at=payload.reported_at,
-        carrier=payload.carrier,
-        origin=payload.origin,
-        destination=payload.destination,
-        raw_text=payload.raw_text,
-        meta_data=payload.metadata,
-    )
-    session.add(record)
     try:
-        await session.commit()
-    except IntegrityError:
-        await session.rollback()
+        record = await save_exception(payload, session)
+    except DuplicateShipmentError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"shipment_id {payload.shipment_id!r} already has a recorded exception",
+            detail=str(exc),
         ) from None
-    await session.refresh(record)
-    await request.app.state.agent.aupdate_state(
-        shipment_thread_config(record.shipment_id),
-        create_initial_state(record.shipment_id),
-    )
+    await start_exception_analysis(agent, record.shipment_id)
+
     return _to_response(record)
+
+
+@router.get("/exceptions", response_model=list[ExceptionResponse])
+async def list_exceptions(
+    limit: int = Query(50, ge=1, le=200),
+    session: AsyncSession = Depends(get_db),
+) -> list[ExceptionResponse]:
+    result = await session.execute(
+        select(ShipmentException)
+        .order_by(ShipmentException.reported_at.desc(), ShipmentException.id.desc())
+        .limit(limit)
+    )
+    return [_to_response(record) for record in result.scalars().all()]
+
+
+@router.get("/exceptions/{shipment_id}/analysis", response_model=AnalysisResponse)
+async def get_exception_analysis(
+    shipment_id: str,
+    session: AsyncSession = Depends(get_db),
+    agent: Any = Depends(get_agent),
+) -> AnalysisResponse:
+    await _require_exception(session, shipment_id)
+    return AnalysisResponse.model_validate(
+        await read_exception_analysis(agent, shipment_id)
+    )
+
+
+@router.post("/exceptions/{shipment_id}/analyze", response_model=AnalysisResponse)
+async def analyze_exception(
+    shipment_id: str,
+    session: AsyncSession = Depends(get_db),
+    agent: Any = Depends(get_agent),
+) -> AnalysisResponse:
+    await _require_exception(session, shipment_id)
+    await start_exception_analysis(agent, shipment_id)
+    return AnalysisResponse.model_validate(
+        await read_exception_analysis(agent, shipment_id)
+    )
+
+
+async def _require_exception(
+    session: AsyncSession, shipment_id: str
+) -> ShipmentException:
+    record = await load_exception(session, shipment_id)
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"shipment_id {shipment_id!r} has no recorded exception",
+        )
+    return record
 
 
 def _to_response(record: ShipmentException) -> ExceptionResponse:
@@ -112,7 +145,7 @@ async def http_exception_handler(
         status_code=exc.status_code,
         content=ErrorResponse(
             error=ErrorBody(
-                code=_STATUS_CODES.get(exc.status_code, "http_error"),
+                code=STATUS_CODES.get(exc.status_code, "http_error"),
                 message=message,
             )
         ).model_dump(),
@@ -142,7 +175,7 @@ async def validation_exception_handler(
         content=ErrorResponse(
             error=ErrorBody(
                 code="validation_error",
-                message="Request body failed validation",
+                message="Request failed validation",
                 details=details,
             )
         ).model_dump(),

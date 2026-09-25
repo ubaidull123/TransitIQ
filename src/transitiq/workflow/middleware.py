@@ -1,10 +1,12 @@
 from typing import Any
 
+from langchain.agents import AgentState
 from langchain.agents.middleware import before_model
+from langgraph.runtime import Runtime
 from sqlalchemy import select
 
 from transitiq.database.db import AsyncSessionLocal
-from transitiq.database.models import ShipmentException
+from transitiq.database.models.exception_model import ShipmentException
 
 INSUFFICIENT_DESCRIPTIONS = {"bad", "n/a", "none", "null", "error", "unknown", "test"}
 
@@ -22,7 +24,9 @@ def validate_ticket_description(description: str | None) -> None:
 
 
 @before_model
-async def load_ticket(state: dict[str, Any], runtime: Any) -> dict[str, Any] | None:
+async def load_ticket(
+    state: AgentState[Any], runtime: Runtime[Any]
+) -> dict[str, Any] | None:
     """Middleware to hydrate shipment ticket information from PostgreSQL into agent state on first execution.
     On subsequent executions for the same thread, the checkpointer restores state and this DB query is skipped.
     """

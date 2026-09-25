@@ -72,6 +72,7 @@ class TransitState(AgentState, total=False):
 
     status: Annotated[str, reduce_status]
     current_step: Annotated[str, reduce_last]
+    analysis_error: Annotated[str | None, reduce_last]
 
     exception_type: Annotated[str | None, reduce_last]
     severity: Annotated[str | None, reduce_last]
@@ -103,6 +104,7 @@ def create_initial_state(
         "raw_text": raw_text,
         "status": status,
         "current_step": current_step,
+        "analysis_error": None,
         "exception_type": None,
         "severity": None,
         "missing_information": [],

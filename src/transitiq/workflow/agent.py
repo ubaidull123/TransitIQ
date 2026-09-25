@@ -58,7 +58,7 @@ def case_prompt(request: ModelRequest) -> str:
 
 def create_transit_agent(checkpointer: Any = None, model: Any = None):
     """Factory to create a compiled TransitIQ agent with optional checkpointer and model."""
-    llm = model or get_openrouter_client()
+    llm = get_openrouter_client()
     return create_agent(
         model=llm,
         tools=OPERATIONAL_TOOLS,

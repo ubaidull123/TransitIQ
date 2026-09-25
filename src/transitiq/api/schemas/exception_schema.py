@@ -34,5 +34,20 @@ class ErrorBody(BaseModel):
     details: list[ErrorDetail] = Field(default_factory=list)
 
 
+class AnalysisResponse(BaseModel):
+    shipment_id: str
+    status: str
+    current_step: str
+    analysis_error: Optional[str] = None
+    exception_type: Optional[str] = None
+    severity: Optional[str] = None
+    missing_information: list[str] = Field(default_factory=list)
+    recommended_actions: list[str] = Field(default_factory=list)
+    actions: list[dict] = Field(default_factory=list)
+    context: list[dict] = Field(default_factory=list)
+    analysis_history: list[dict] = Field(default_factory=list)
+    updated_at: Optional[datetime] = None
+
+
 class ErrorResponse(BaseModel):
     error: ErrorBody
