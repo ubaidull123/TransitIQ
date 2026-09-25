@@ -1,44 +1,35 @@
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
-from transitiq.database.db import get_database_uri, initialize_ticket_schema
-from transitiq.database.repositories import ticket_repository
-from transitiq.models import TicketCreate, TicketResponse
-from transitiq.services.ticket_service import TicketService
+from transitiq.api.routers.exception_routes import exception_handlers, router
+from transitiq.database import models  
+from transitiq.database.db import Base, engine, get_database_uri
 from transitiq.workflow.agent import create_transit_agent
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Own the shared checkpointer and agent for the application lifetime."""
-    await initialize_ticket_schema()
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    """Create missing tables on startup, release the connection pool on shutdown."""
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
     async with AsyncPostgresSaver.from_conn_string(get_database_uri()) as checkpointer:
         await checkpointer.setup()
-        agent = create_transit_agent(checkpointer=checkpointer)
-        app.state.ticket_service = TicketService(ticket_repository, agent)
+        app.state.agent = create_transit_agent(checkpointer=checkpointer)
         yield
+    await engine.dispose()
 
 
-def create_app(lifespan_context: Callable[..., Any] | None = lifespan) -> FastAPI:
-    """Build the API, with a small dependency seam for deterministic tests."""
-    application = FastAPI(title="TransitIQ", version="0.2.0", lifespan=lifespan_context)
-
-    @application.get("/health")
-    async def health() -> dict[str, str]:
-        return {"status": "ok"}
-
-    @application.post(
-        "/exceptions",
-        response_model=TicketResponse,
-        status_code=status.HTTP_201_CREATED,
-    )
-    async def create_exception(payload: TicketCreate, request: Request) -> dict:
-        return await request.app.state.ticket_service.create_ticket(payload)
-
+def create_app() -> FastAPI:
+    application = FastAPI(
+        title="TransitIQ",
+        version="0.2.0",
+        lifespan=lifespan,
+        exception_handlers=exception_handlers,
+    ) 
+    application.include_router(router)
     return application
 
 

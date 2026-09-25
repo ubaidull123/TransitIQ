@@ -15,6 +15,7 @@ dependencies = [
     "langgraph>=1.2.11",
     "langgraph-checkpoint-postgres>=3.1.2",
     "psycopg[binary,pool]>=3.3.5",
+    "sqlalchemy>=2.0.54",
     "uvicorn>=0.35.0",
 ]
 

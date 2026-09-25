@@ -1,21 +1,19 @@
 from typing import Annotated, Any
+
 from langchain.agents import AgentState
 
 
 def reduce_last(current: Any, new: Any) -> Any:
-    """Reducer that preserves the latest updated value."""
     return new if new is not None else current
 
 
 def reduce_status(current: str | None, new: str | None) -> str:
-    """Keep the latest explicit status update."""
     return new if new is not None else (current or "new")
 
 
 def reduce_actions(
     current: list[dict[str, Any]] | None, new: list[dict[str, Any]] | None
 ) -> list[dict[str, Any]]:
-    """Reducer that merges actions by ID preserving concurrent updates."""
     if not current:
         return list(new or [])
     if not new:
@@ -34,7 +32,6 @@ def reduce_actions(
 def reduce_context(
     current: list[dict[str, Any]] | None, new: list[dict[str, Any]] | None
 ) -> list[dict[str, Any]]:
-    """Reducer that combines concurrent context additions without duplicates."""
     if not current:
         return list(new or [])
     if not new:
@@ -52,7 +49,6 @@ def reduce_context(
 def reduce_history(
     current: list[dict[str, Any]] | None, new: list[dict[str, Any]] | None
 ) -> list[dict[str, Any]]:
-    """Reducer that combines concurrent analysis history additions without duplicates."""
     if not current:
         return list(new or [])
     if not new:
@@ -68,14 +64,11 @@ def reduce_history(
 
 
 class TransitState(AgentState, total=False):
-    """Bounded operational state schema for a shipment exception thread with concurrent tool update reducers."""
-
-    shipment_id: Annotated[int, reduce_last]
-
+    shipment_id: Annotated[str, reduce_last]
     origin: Annotated[str, reduce_last]
     destination: Annotated[str, reduce_last]
     carrier: Annotated[str, reduce_last]
-    issue_description: Annotated[str, reduce_last]
+    raw_text: Annotated[str, reduce_last]
 
     status: Annotated[str, reduce_status]
     current_step: Annotated[str, reduce_last]
@@ -94,21 +87,20 @@ class TransitState(AgentState, total=False):
 
 
 def create_initial_state(
-    shipment_id: int,
+    shipment_id: str,
     origin: str = "",
     destination: str = "",
     carrier: str = "",
-    issue_description: str = "",
+    raw_text: str = "",
     status: str = "new",
     current_step: str = "new",
 ) -> TransitState:
-    """Create a clean, bounded initial TransitState dictionary with valid defaults."""
     return {
         "shipment_id": shipment_id,
         "origin": origin,
         "destination": destination,
         "carrier": carrier,
-        "issue_description": issue_description,
+        "raw_text": raw_text,
         "status": status,
         "current_step": current_step,
         "exception_type": None,

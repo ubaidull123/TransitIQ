@@ -5,7 +5,7 @@ import uvicorn
 
 
 def selector_loop_factory() -> asyncio.AbstractEventLoop:
-    """Create the Windows-compatible event loop required by async psycopg."""
+    """Use the selector loop, which psycopg's async connections require on Windows."""
     return asyncio.SelectorEventLoop()
 
 
