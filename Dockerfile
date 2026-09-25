@@ -22,10 +22,12 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
+COPY alembic.ini ./
+COPY alembic ./alembic
 RUN uv sync --frozen --no-dev
 
 COPY --from=frontend /build/dist ./frontend/dist
 
 EXPOSE 8765
 
-CMD ["/app/.venv/bin/transitiq-api"]
+CMD ["sh", "-c", "/app/.venv/bin/alembic upgrade head && /app/.venv/bin/transitiq-api"]
