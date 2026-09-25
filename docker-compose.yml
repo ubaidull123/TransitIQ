@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-transitiq}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-transitiq}
+      POSTGRES_DB: ${DB_NAME:-transitiq}
+    volumes:
+      - transitiq-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # connect with local(psql, DBeaver, ...) on the host:
+    # ports:
+    #   - "5432:5432"
+
+  app:
+    build: .
+    ports:
+      - "8765:8765"
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: "8765"
+      # Connect to the Postgres service above
+      # these override any DB_HOST/DB_PORT from .env
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER:-transitiq}
+      DB_PASSWORD: ${DB_PASSWORD:-transitiq}
+      DB_NAME: ${DB_NAME:-transitiq}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  transitiq-pgdata:
